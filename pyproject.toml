@@ -1,0 +1,68 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "remote-agent-server"
+version = "0.1.0"
+description = "Remote Agent Server for OpenSearch Dashboards — multi-agent orchestrator with page-context routing"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "opensearch-py",
+    "mcp",
+    "strands-agents[ollama]",
+    "python-dotenv",
+    "opensearch-mcp-server-py",
+    "ag-ui-protocol",
+    "fastapi",
+    "sse-starlette",
+    "uvicorn",
+    "jsonpatch>=1.33",
+    "slowapi",
+    "pydantic-settings>=2.0.0",
+    "pyyaml>=6.0",
+    "PyJWT>=2.8.0",
+    "sqlalchemy>=2.0.0",
+    "aiosqlite",
+]
+
+[project.optional-dependencies]
+dev = [
+    "ruff>=0.14.5",
+    "pytest>=7.4.0",
+    "pytest-asyncio>=0.21.0",
+    "pytest-httpx>=0.27.0",
+    "httpx>=0.25.0",
+    "pytest-cov>=4.1.0",
+    "pytest-timeout>=2.3.0",
+    "mypy>=1.0.0",
+]
+
+[tool.ruff]
+line-length = 88
+indent-width = 4
+target-version = "py310"
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+
+[tool.ruff.lint]
+extend-select = ["I", "UP"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+asyncio_mode = "auto"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/server", "src/orchestrator", "src/agents", "src/utils"]
+
+[tool.hatch.build.sources]
+"src/server" = "server"
+"src/orchestrator" = "orchestrator"
+"src/agents" = "agents"
+"src/utils" = "utils"
