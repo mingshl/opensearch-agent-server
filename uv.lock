@@ -1985,7 +1985,7 @@ wheels = [
 ]
 
 [[package]]
-name = "remote-agent-server"
+name = "opensearch-agent-server"
 version = "0.1.0"
 source = { editable = "." }
 dependencies = [

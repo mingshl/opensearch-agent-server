@@ -1,4 +1,4 @@
-"""Page-Context Router for the Remote Agent Server.
+"""Page-Context Router for the OpenSearch Agent Server.
 
 Routes incoming requests to the appropriate sub-agent based on page_context.
 Implements a two-tier routing strategy:

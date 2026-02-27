@@ -1,4 +1,4 @@
-"""Remote Agent Server — Entry Point.
+"""OpenSearch Agent Server — Entry Point.
 
 Run this server to expose the multi-agent orchestrator via AG-UI protocol.
 
@@ -9,7 +9,7 @@ Usage:
 """
 
 # Ensure local src/ packages take priority over installed packages.
-# Both remote-agent-server and os-art export a "server" package via editable
+# Both opensearch-agent-server and os-art export a "server" package via editable
 # installs (.pth files). The os-art .pth is processed first alphabetically,
 # putting ART's src/ ahead of ours on sys.path. We must force our local src/
 # to position 0 regardless of whether it's already in sys.path elsewhere.
@@ -65,14 +65,14 @@ logger = get_logger(__name__)
 
 
 def main() -> None:
-    """Run the Remote Agent Server."""
+    """Run the OpenSearch Agent Server."""
     config = get_config()
     host = config.server_host
     port = config.server_port
 
     log_info_event(
         logger,
-        f"Starting Remote Agent Server on {host}:{port}",
+        f"Starting OpenSearch Agent Server on {host}:{port}",
         "server.starting",
         host=host,
         port=port,

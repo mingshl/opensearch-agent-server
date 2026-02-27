@@ -81,7 +81,7 @@ class StrandsAgent:
         self,
         agent_factory: AgentFactory | None = None,
         agent: StrandsAgentCore | None = None,
-        name: str = "remote-agent-server",
+        name: str = "opensearch-agent-server",
         description: str = "Multi-agent orchestrator for OpenSearch Dashboards",
         enable_thread_caching: bool = True,
         config: StrandsAgentConfig | None = None,

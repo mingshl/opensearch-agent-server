@@ -720,7 +720,7 @@ async def generate_events(
     # Initialize counter
     event_count = 0
 
-    # Phoenix tracing removed for remote-agent-server; use nullcontext as no-op
+    # Phoenix tracing removed for opensearch-agent-server; use nullcontext as no-op
     with nullcontext():
         try:
             # Process event stream - `async for` iterates over async generator

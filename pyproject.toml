@@ -3,9 +3,9 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "remote-agent-server"
+name = "opensearch-agent-server"
 version = "0.1.0"
-description = "Remote Agent Server for OpenSearch Dashboards — multi-agent orchestrator with page-context routing"
+description = "OpenSearch Agent Server for OpenSearch Dashboards — multi-agent orchestrator with page-context routing"
 readme = "README.md"
 requires-python = ">=3.10"
 dependencies = [

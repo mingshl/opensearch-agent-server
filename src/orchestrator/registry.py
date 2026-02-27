@@ -1,4 +1,4 @@
-"""Agent Registry for the Remote Agent Server.
+"""Agent Registry for the OpenSearch Agent Server.
 
 Maps page contexts to agent factories. The orchestrator uses this registry
 to determine which sub-agent should handle a given request.

@@ -23,7 +23,7 @@ from utils.logging_helpers import (
 logger = get_logger(__name__)
 
 # Import monitor - will be available if in Chainlit context
-# Chainlit monitor removed — not used in remote-agent-server
+# Chainlit monitor removed — not used in opensearch-agent-server
 MONITOR_AVAILABLE = False
 get_monitor = None
 

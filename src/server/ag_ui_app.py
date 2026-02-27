@@ -341,7 +341,7 @@ def create_app(config_override: ServerConfig | None = None) -> FastAPI:
 
         strands_agent = StrandsAgent(
             agent_factory=create_agent_for_request,
-            name="remote-agent-server",
+            name="opensearch-agent-server",
             description="Multi-agent orchestrator for OpenSearch Dashboards",
             cache_max_size=config_resolved.agent_cache_size,
         )
@@ -365,7 +365,7 @@ def create_app(config_override: ServerConfig | None = None) -> FastAPI:
             )
 
     app = FastAPI(
-        title="Remote Agent Server for OpenSearch Dashboards",
+        title="OpenSearch Agent Server for OpenSearch Dashboards",
         description=(
             "Multi-agent orchestrator for OpenSearch Dashboards. Routes requests "
             "by page context to specialized sub-agents via the AG-UI protocol (SSE)."
