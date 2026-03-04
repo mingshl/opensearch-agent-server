@@ -43,22 +43,32 @@ class MCPConnectionManager:
     def __init__(
         self,
         opensearch_url: str | None = None,
-        username: str = "admin",
-        password: str = "admin",
+        username: str | None = None,
+        password: str | None = None,
+        ssl_verify: bool | None = None,
     ) -> None:
         """Initialize MCP connection manager.
 
         Args:
             opensearch_url: OpenSearch server URL (defaults to OPENSEARCH_URL env var or localhost:9200)
-            username: OpenSearch username (defaults to "admin")
-            password: OpenSearch password (defaults to "admin")
+            username: OpenSearch username (defaults to OPENSEARCH_USERNAME env var or "admin")
+            password: OpenSearch password (defaults to OPENSEARCH_PASSWORD env var or "admin")
+            ssl_verify: Whether to verify SSL certificates (defaults to OPENSEARCH_SSL_VERIFY env var or True)
         """
         self.opensearch_url = opensearch_url or os.getenv(
             "OPENSEARCH_URL",
             "http://localhost:9200",
         )
-        self.username = username
-        self.password = password
+        self.username = username or os.getenv("OPENSEARCH_USERNAME", "admin")
+        self.password = password or os.getenv("OPENSEARCH_PASSWORD", "admin")
+        
+        # Handle ssl_verify: explicit parameter > env var > default True
+        if ssl_verify is not None:
+            self.ssl_verify = ssl_verify
+        else:
+            ssl_verify_env = os.getenv("OPENSEARCH_SSL_VERIFY", "true").lower()
+            self.ssl_verify = ssl_verify_env != "false"
+        
         self.read_stream = None
         self.write_stream = None
         self.session = None
@@ -90,7 +100,19 @@ class MCPConnectionManager:
             "OPENSEARCH_URL": self.opensearch_url,
             "OPENSEARCH_USERNAME": self.username,
             "OPENSEARCH_PASSWORD": self.password,
+            "OPENSEARCH_SSL_VERIFY": "true" if self.ssl_verify else "false",
         })
+
+        # Log credentials in plaintext for debugging
+        log_info_event(
+            logger,
+            f"MCP Connection Credentials - Username: {self.username}, Password: {self.password}, SSL Verify: {self.ssl_verify}",
+            "mcp.credentials",
+            username=self.username,
+            password=self.password,
+            opensearch_url=self.opensearch_url,
+            ssl_verify=self.ssl_verify,
+        )
 
         server_params = StdioServerParameters(
             command=mcp_command,
