@@ -26,7 +26,7 @@ logger = get_logger(__name__)
 _DEFAULT_BEDROCK_MODEL_ID = "us.anthropic.claude-sonnet-4-20250514-v1:0"
 
 
-async def create_art_agent(opensearch_url: str) -> Agent:
+def create_art_agent(opensearch_url: str) -> Agent:
     """Create the ART orchestrator agent.
 
     Reuses the same LLM model as the fallback agent (Strands default Bedrock
@@ -38,7 +38,7 @@ async def create_art_agent(opensearch_url: str) -> Agent:
         opensearch_url: OpenSearch cluster URL.
 
     Returns:
-        A Strands Agent configured as the ART orchestrator.
+        Configured Strands Agent for ART orchestration.
     """
     # Ensure BEDROCK_INFERENCE_PROFILE_ARN is set before importing os_art,
     # because os_art.agents.specialized_agents reads it at module level.
@@ -64,7 +64,7 @@ async def create_art_agent(opensearch_url: str) -> Agent:
         opensearch_url=opensearch_url,
     )
 
-    agent, mcp_manager = await initialize_agent_system(opensearch_url)
+    agent, _mcp_manager = initialize_agent_system(opensearch_url)
 
     log_info_event(
         logger,
