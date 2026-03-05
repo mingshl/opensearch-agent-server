@@ -2,7 +2,7 @@
 
 Exposes the multi-agent system via AG-UI protocol for frontend integration.
 create_app() builds the FastAPI app; the lifespan context manager handles
-startup (config validation, persistence, Phoenix, rate limiting, StrandsAgent)
+startup (config validation, persistence, telemetry, rate limiting, StrandsAgent)
 and shutdown (agent thread cleanup).
 """
 
@@ -51,8 +51,10 @@ if not logging.root.handlers:
 logger = get_logger(__name__)
 
 # Imports below run after logging config so that:
-# - Phoenix and route modules see configured logging if we configured it here.
+# - OTel and route modules see configured logging if we configured it here.
 # - No need to reorder if new modules depend on config or logging.
+from utils.otel_init import initialize_telemetry  # noqa: E402
+from server.metrics import capture_span  # noqa: E402
 from server.auth_middleware import (  # noqa: E402
     AuthenticationMiddleware,
     create_auth_middleware,
@@ -235,7 +237,7 @@ def create_app(config_override: ServerConfig | None = None) -> FastAPI:
         """FastAPI lifespan: startup then yield, then shutdown.
 
         Startup: register MCP exception handler, validate config, init
-        persistence (if enabled), Phoenix, rate limiting, and StrandsAgent.
+        persistence (if enabled), telemetry, rate limiting, and StrandsAgent.
         Sets module-level persistence and strands_agent for use by routes.
         Shutdown: cleanup cached agent threads and log result.
         """
@@ -277,6 +279,32 @@ def create_app(config_override: ServerConfig | None = None) -> FastAPI:
                 "AG-UI data persistence disabled (set AG_UI_ENABLE_PERSISTENCE=true to enable)",
                 "ag_ui.persistence_disabled",
                 enabled=False,
+            )
+
+        otel_endpoint = config_resolved.otel_exporter_endpoint
+        otel_service_name = config_resolved.otel_service_name
+        telemetry_initialized = initialize_telemetry(
+            otel_endpoint=otel_endpoint,
+            service_name=otel_service_name,
+        )
+        if telemetry_initialized:
+            log_info_event(
+                logger,
+                f"OpenTelemetry tracing initialized: endpoint={otel_endpoint}, "
+                f"service={otel_service_name}",
+                "ag_ui.otel_initialized",
+                otel_endpoint=otel_endpoint,
+                service_name=otel_service_name,
+            )
+        else:
+            log_warning_event(
+                logger,
+                f"OpenTelemetry tracing initialization failed or unavailable: "
+                f"endpoint={otel_endpoint}. "
+                "Server will continue without tracing.",
+                "ag_ui.otel_initialization_failed",
+                otel_endpoint=otel_endpoint,
+                service_name=otel_service_name,
             )
 
         setup_rate_limiting(app, rate_limiter)
@@ -626,6 +654,7 @@ async def list_agents(request: Request) -> dict:
 # FastAPI automatically parses and validates request body as ValidatedRunAgentInput (Pydantic model)
 @app.post("/runs", tags=["runs"])
 @rate_limit
+@capture_span
 async def create_run(
     input_data: ValidatedRunAgentInput,
     request: Request,

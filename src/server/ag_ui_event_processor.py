@@ -738,13 +738,13 @@ async def generate_events(
         Encoded SSE event strings
 
     """
-    from contextlib import nullcontext
+    from utils.otel_init import using_user
 
     # Initialize counter
     event_count = 0
 
-    # Phoenix tracing removed for opensearch-agent-server; use nullcontext as no-op
-    with nullcontext():
+    # Set up OpenInference user tracing context (no-op if OTel not available)
+    with using_user(user_id):
         try:
             # Process event stream - `async for` iterates over async generator
             async for encoded_event in _process_event_stream(

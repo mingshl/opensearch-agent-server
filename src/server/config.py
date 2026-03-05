@@ -125,11 +125,11 @@ class ServerConfig(BaseSettings):
     @model_validator(mode="before")
     @classmethod
     def handle_env_vars_without_prefix(cls, data: dict) -> dict:
-        """Handle env vars which don't have AG_UI_ prefix (OPENSEARCH_URL, PHOENIX_URL)."""
+        """Handle env vars which don't have AG_UI_ prefix (OPENSEARCH_URL, OTEL_*)."""
         if isinstance(data, dict):
             _inject_env_var(data, "opensearch_url", "OPENSEARCH_URL")
-            _inject_env_var(data, "phoenix_url", "PHOENIX_URL")
-            _inject_env_var(data, "phoenix_public_url", "PHOENIX_PUBLIC_URL")
+            _inject_env_var(data, "otel_exporter_endpoint", "OTEL_EXPORTER_OTLP_ENDPOINT")
+            _inject_env_var(data, "otel_service_name", "OTEL_SERVICE_NAME")
         return data
 
     # CORS Configuration
@@ -209,13 +209,14 @@ class ServerConfig(BaseSettings):
     )
 
     # Observability Configuration
-    phoenix_url: str = Field(
-        default="http://phoenix:6006",
-        description="Phoenix observability URL (internal)",
+    otel_exporter_endpoint: str = Field(
+        default="http://localhost:4318",
+        description="OTLP exporter endpoint base URL (from OTEL_EXPORTER_OTLP_ENDPOINT env var). "
+        "/v1/traces is appended automatically.",
     )
-    phoenix_public_url: str | None = Field(
-        default=None,
-        description="Phoenix public URL (for browser access)",
+    otel_service_name: str = Field(
+        default="opensearch-agent-server",
+        description="Service name for OTel trace attribution (from OTEL_SERVICE_NAME env var).",
     )
 
     # Logging Configuration
