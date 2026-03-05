@@ -7,7 +7,8 @@ throughout the codebase.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any, Protocol, TypedDict
+from typing import Any, Protocol
+from typing_extensions import TypedDict
 
 # Import AG-UI event types for type aliases
 try:

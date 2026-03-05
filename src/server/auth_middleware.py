@@ -54,7 +54,8 @@ from __future__ import annotations
 import json
 from collections.abc import Callable
 from enum import Enum
-from typing import TypedDict
+
+from typing_extensions import TypedDict
 
 import jwt
 from fastapi import HTTPException, Request, status
