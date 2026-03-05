@@ -49,8 +49,8 @@ def reset_opensearch_tools() -> Generator[None, None, None]:
 
 @pytest.fixture(autouse=True)
 def mock_monitor() -> Generator[None, None, None]:
-    """Mock get_monitor to avoid Chainlit dependencies."""
-    with patch("utils.monitored_tool.get_monitor", return_value=None):
+    """Mock emitter to avoid dependencies."""
+    with patch("utils.monitored_tool.get_ag_ui_emitter", return_value=None):
         yield
 
 

@@ -55,8 +55,8 @@ class TestListExperiment:
 
     @pytest.fixture(autouse=True)
     def mock_monitor(self) -> Generator[None, None, None]:
-        """Mock get_monitor to avoid Chainlit dependencies."""
-        with patch("utils.monitored_tool.get_monitor", return_value=None):
+        """Mock emitter to avoid dependencies."""
+        with patch("utils.monitored_tool.get_ag_ui_emitter", return_value=None):
             yield
 
     @pytest.mark.asyncio
@@ -113,8 +113,8 @@ class TestGetExperiment:
 
     @pytest.fixture(autouse=True)
     def mock_monitor(self) -> Generator[None, None, None]:
-        """Mock get_monitor to avoid Chainlit dependencies."""
-        with patch("utils.monitored_tool.get_monitor", return_value=None):
+        """Mock emitter to avoid dependencies."""
+        with patch("utils.monitored_tool.get_ag_ui_emitter", return_value=None):
             yield
 
     @pytest.mark.asyncio
@@ -363,8 +363,8 @@ class TestCreateExperiment:
 
     @pytest.fixture(autouse=True)
     def mock_monitor(self):
-        """Mock get_monitor to avoid Chainlit dependencies."""
-        with patch("utils.monitored_tool.get_monitor", return_value=None):
+        """Mock emitter to avoid dependencies."""
+        with patch("utils.monitored_tool.get_ag_ui_emitter", return_value=None):
             yield
 
     @pytest.mark.asyncio
@@ -519,8 +519,8 @@ class TestGetExperimentResults:
 
     @pytest.fixture(autouse=True)
     def mock_monitor(self):
-        """Mock get_monitor to avoid Chainlit dependencies."""
-        with patch("utils.monitored_tool.get_monitor", return_value=None):
+        """Mock emitter to avoid dependencies."""
+        with patch("utils.monitored_tool.get_ag_ui_emitter", return_value=None):
             yield
 
     @pytest.mark.asyncio
@@ -1700,8 +1700,8 @@ class TestDeleteExperiment:
 
     @pytest.fixture(autouse=True)
     def mock_monitor(self):
-        """Mock get_monitor to avoid Chainlit dependencies."""
-        with patch("utils.monitored_tool.get_monitor", return_value=None):
+        """Mock emitter to avoid dependencies."""
+        with patch("utils.monitored_tool.get_ag_ui_emitter", return_value=None):
             yield
 
     @pytest.mark.asyncio
@@ -1752,8 +1752,8 @@ class TestExperimentToolsLargeExperiments:
 
     @pytest.fixture(autouse=True)
     def mock_monitor(self):
-        """Mock get_monitor to avoid Chainlit dependencies."""
-        with patch("utils.monitored_tool.get_monitor", return_value=None):
+        """Mock emitter to avoid dependencies."""
+        with patch("utils.monitored_tool.get_ag_ui_emitter", return_value=None):
             yield
 
     @pytest.mark.asyncio
@@ -1893,8 +1893,8 @@ class TestExperimentToolsTimeoutHandling:
 
     @pytest.fixture(autouse=True)
     def mock_monitor(self):
-        """Mock get_monitor to avoid Chainlit dependencies."""
-        with patch("utils.monitored_tool.get_monitor", return_value=None):
+        """Mock emitter to avoid dependencies."""
+        with patch("utils.monitored_tool.get_ag_ui_emitter", return_value=None):
             yield
 
     @pytest.mark.asyncio
@@ -1959,8 +1959,8 @@ class TestExperimentToolsNetworkFailure:
 
     @pytest.fixture(autouse=True)
     def mock_monitor(self):
-        """Mock get_monitor to avoid Chainlit dependencies."""
-        with patch("utils.monitored_tool.get_monitor", return_value=None):
+        """Mock emitter to avoid dependencies."""
+        with patch("utils.monitored_tool.get_ag_ui_emitter", return_value=None):
             yield
 
     @pytest.mark.asyncio
@@ -2059,8 +2059,8 @@ class TestExperimentToolsConcurrentRequests:
 
     @pytest.fixture(autouse=True)
     def mock_monitor(self):
-        """Mock get_monitor to avoid Chainlit dependencies."""
-        with patch("utils.monitored_tool.get_monitor", return_value=None):
+        """Mock emitter to avoid dependencies."""
+        with patch("utils.monitored_tool.get_ag_ui_emitter", return_value=None):
             yield
 
     @pytest.mark.asyncio

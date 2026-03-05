@@ -353,7 +353,7 @@ async def _process_event_stream(
     python_tool_event_queue: asyncio.Queue[str] = asyncio.Queue(maxsize=max_queue_size)
 
     # Create a callback to process and queue encoded events immediately
-    # This mimics Chainlit's immediate UI update pattern
+    # This mimics external's immediate UI update pattern
     async def process_and_queue_python_event(event: AGUIEvent) -> None:
         """Process Python tool event and queue the encoded result immediately.
 

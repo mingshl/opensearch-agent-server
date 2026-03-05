@@ -19,10 +19,11 @@ from helpers.specialized_agents_helpers import (
 pytestmark = pytest.mark.integration
 
 
+# Mock emitter to avoid missing dependencies in tests
 @pytest.fixture(autouse=True)
-def mock_chainlit_monitor() -> Generator[None, None, None]:
-    """Mock get_monitor so agent wrappers do not require Chainlit context."""
-    with patch("utils.monitored_tool.get_monitor", return_value=None):
+def mock_get_emitter() -> Generator[None, None, None]:
+    """Mock emitter so agent wrappers do not require external context."""
+    with patch("utils.monitored_tool.get_ag_ui_emitter", return_value=None):
         yield
 
 

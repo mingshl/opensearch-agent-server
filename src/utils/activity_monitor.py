@@ -2,8 +2,7 @@
 AG-UI Activity Monitor
 
 Tracks tool calls and agent activity for AG-UI server.
-Provides activity summaries similar to Chainlit's AgentActivityMonitor
-but without Chainlit dependencies.
+Provides activity summaries for the agent's actions.
 """
 
 from __future__ import annotations
@@ -185,7 +184,7 @@ class AGUIActivityMonitor:
         """
         Log the activity summary.
 
-        Uses structured logging format similar to Chainlit's activity summary.
+        Uses structured logging format similar to external's activity summary.
         """
         summary = self.get_summary()
 

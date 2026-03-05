@@ -29,8 +29,8 @@ class TestQuerySetToolsErrors:
 
     @pytest.fixture(autouse=True)
     def mock_monitor(self):
-        """Mock get_monitor to avoid Chainlit dependencies."""
-        with patch("utils.monitored_tool.get_monitor", return_value=None):
+        """Mock emitter to avoid dependencies."""
+        with patch("utils.monitored_tool.get_ag_ui_emitter", return_value=None):
             yield
 
     @pytest.mark.asyncio

@@ -1,8 +1,8 @@
 """
 Monitored Tool Decorator
 
-Wraps Strands @tool decorator to add real-time UI monitoring via AgentActivityMonitor.
-Use this instead of @tool directly to get automatic Chainlit step creation.
+Wraps Strands @tool decorator to add real-time UI monitoring via AG-UI event emission.
+Use this instead of @tool directly to get automatic event emission in the AG-UI.
 """
 
 from __future__ import annotations
@@ -14,31 +14,16 @@ from typing import Any
 
 from strands.tools.decorator import tool
 
-# Chainlit monitor not used in opensearch-agent-server
-MONITOR_AVAILABLE = False
-get_monitor = None
-
-# Exceptions that may indicate monitor/emitter unavailable at runtime (e.g. wrong
+# Exceptions that may indicate emitter unavailable at runtime (e.g. wrong
 # context). We catch these so tools still run; we do not catch BaseException
 # (KeyboardInterrupt, SystemExit) or other critical errors.
-_MONITOR_UNAVAILABLE_EXCEPTIONS: tuple[type[BaseException], ...] = (
+_EMITTER_UNAVAILABLE_EXCEPTIONS: tuple[type[BaseException], ...] = (
     ImportError,
     AttributeError,
     RuntimeError,
     TypeError,
     LookupError,
 )
-try:
-    from chainlit.context import (
-        ChainlitContextException,
-    )  # "context not found" when not in Chainlit app (e.g. pytest)
-
-    _MONITOR_UNAVAILABLE_EXCEPTIONS = (
-        *_MONITOR_UNAVAILABLE_EXCEPTIONS,
-        ChainlitContextException,
-    )
-except ImportError:
-    pass  # Chainlit not installed; base tuple is sufficient
 
 # Try to import AG-UI emitter - will work in AG-UI context
 try:
@@ -65,12 +50,12 @@ def monitored_tool(
     inputSchema: dict | None = None,
 ) -> Callable[..., Any]:
     """
-    Decorator that wraps @tool and adds real-time monitoring for Chainlit UI.
+    Decorator that wraps @tool and adds real-time monitoring for the AG-UI.
 
     This decorator:
-    1. Adds activity monitoring (creates Chainlit steps showing tool execution)
+    1. Adds AG-UI event emission (notifies the UI about tool execution)
     2. Applies the standard Strands @tool decorator
-    3. Gracefully degrades if monitor is not available (non-Chainlit contexts)
+    3. Gracefully degrades if the emitter is not available
 
     Usage:
         @monitored_tool(
@@ -97,13 +82,12 @@ def monitored_tool(
 
             @functools.wraps(func)
             async def async_wrapper(*args: Any, **kwargs: Any) -> Any:
-                """Async wrapper that adds monitoring and AG-UI event emission to tool calls.
+                """Async wrapper that adds AG-UI event emission to tool calls.
 
                 This wrapper:
-                1. Attempts to get Chainlit monitor (if available)
-                2. Attempts to get AG-UI event emitter (if available)
-                3. Executes the tool function with appropriate monitoring
-                4. Gracefully degrades if monitoring is not available
+                1. Attempts to get AG-UI event emitter (if available)
+                2. Executes the tool function with appropriate monitoring
+                3. Gracefully degrades if the emitter is not available
 
                 Args:
                     *args: Positional arguments passed to the tool function
@@ -112,48 +96,19 @@ def monitored_tool(
                 Returns:
                     Result from the wrapped tool function
                 """
-                # Try to get monitor
-                monitor = None
-                if MONITOR_AVAILABLE and get_monitor:
-                    try:
-                        monitor = get_monitor()
-                    except _MONITOR_UNAVAILABLE_EXCEPTIONS:
-                        pass  # Monitor not available in this context
-
                 # Try to get AG-UI emitter
                 ag_ui_emitter = None
                 if GET_AG_UI_EMITTER_AVAILABLE and get_ag_ui_emitter:
                     try:
                         ag_ui_emitter = get_ag_ui_emitter()
-                    except _MONITOR_UNAVAILABLE_EXCEPTIONS:
+                    except _EMITTER_UNAVAILABLE_EXCEPTIONS:
                         pass  # Emitter not available in this context
 
                 tool_name = name or func.__name__
 
                 # Use monitoring if available
-                if monitor and ag_ui_emitter:
-                    # Both Chainlit monitor and AG-UI emitter available
-                    async with monitor.tool_call(tool_name, **kwargs) as step:
-                        async with ag_ui_emitter.tool_call(
-                            tool_name, **kwargs
-                        ) as tool_call_id:
-                            result = await func(*args, **kwargs)
-                            # Set result for AG-UI emitter
-                            await ag_ui_emitter.set_tool_call_result(
-                                tool_call_id, result
-                            )
-                            # Show result preview in step (safe if str(result) fails)
-                            step.output = f"✓ Result: {_result_preview(result)}"
-                            return result
-                elif monitor:
-                    # Only Chainlit monitor available
-                    async with monitor.tool_call(tool_name, **kwargs) as step:
-                        result = await func(*args, **kwargs)
-                        # Show result preview in step (safe if str(result) fails)
-                        step.output = f"✓ Result: {_result_preview(result)}"
-                        return result
-                elif ag_ui_emitter:
-                    # Only AG-UI emitter available
+                if ag_ui_emitter:
+                    # AG-UI emitter available
                     async with ag_ui_emitter.tool_call(
                         tool_name, **kwargs
                     ) as tool_call_id:
@@ -174,14 +129,13 @@ def monitored_tool(
             # Convert sync function to async and add monitoring
             @functools.wraps(func)
             async def async_sync_wrapper(*args: Any, **kwargs: Any) -> Any:
-                """Async wrapper for sync functions that adds monitoring and AG-UI event emission.
+                """Async wrapper for sync functions that adds AG-UI event emission.
 
                 This wrapper:
                 1. Converts sync function to async execution
-                2. Attempts to get Chainlit monitor (if available)
-                3. Attempts to get AG-UI event emitter (if available)
-                4. Executes the sync tool function with appropriate monitoring
-                5. Gracefully degrades if monitoring is not available
+                2. Attempts to get AG-UI event emitter (if available)
+                3. Executes the sync tool function with appropriate monitoring
+                4. Gracefully degrades if the emitter is not available
 
                 Args:
                     *args: Positional arguments passed to the tool function
@@ -190,50 +144,19 @@ def monitored_tool(
                 Returns:
                     Result from the wrapped tool function
                 """
-                # Try to get monitor
-                monitor = None
-                if MONITOR_AVAILABLE and get_monitor:
-                    try:
-                        monitor = get_monitor()
-                    except _MONITOR_UNAVAILABLE_EXCEPTIONS:
-                        pass  # Monitor not available in this context
-
                 # Try to get AG-UI emitter
                 ag_ui_emitter = None
                 if GET_AG_UI_EMITTER_AVAILABLE and get_ag_ui_emitter:
                     try:
                         ag_ui_emitter = get_ag_ui_emitter()
-                    except _MONITOR_UNAVAILABLE_EXCEPTIONS:
+                    except _EMITTER_UNAVAILABLE_EXCEPTIONS:
                         pass  # Emitter not available in this context
 
                 tool_name = name or func.__name__
 
                 # Use monitoring if available
-                if monitor and ag_ui_emitter:
-                    # Both Chainlit monitor and AG-UI emitter available
-                    async with monitor.tool_call(tool_name, **kwargs) as step:
-                        async with ag_ui_emitter.tool_call(
-                            tool_name, **kwargs
-                        ) as tool_call_id:
-                            # Call sync function in async context
-                            result = func(*args, **kwargs)
-                            # Set result for AG-UI emitter
-                            await ag_ui_emitter.set_tool_call_result(
-                                tool_call_id, result
-                            )
-                            # Show result preview in step (safe if str(result) fails)
-                            step.output = f"✓ Result: {_result_preview(result)}"
-                            return result
-                elif monitor:
-                    # Only Chainlit monitor available
-                    async with monitor.tool_call(tool_name, **kwargs) as step:
-                        # Call sync function in async context
-                        result = func(*args, **kwargs)
-                        # Show result preview in step (safe if str(result) fails)
-                        step.output = f"✓ Result: {_result_preview(result)}"
-                        return result
-                elif ag_ui_emitter:
-                    # Only AG-UI emitter available
+                if ag_ui_emitter:
+                    # AG-UI emitter available
                     async with ag_ui_emitter.tool_call(
                         tool_name, **kwargs
                     ) as tool_call_id:
