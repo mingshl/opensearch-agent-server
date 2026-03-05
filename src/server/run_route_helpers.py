@@ -50,6 +50,7 @@ from ag_ui.core import EventType, RunFinishedEvent
 
 from utils.logging_helpers import (
     get_logger,
+    log_debug_event,
     log_error_event,
     log_info_event,
     log_warning_event,  # noqa: F401 (used in event-dropped path)
@@ -476,7 +477,19 @@ async def yield_events_from_queue(
                     event_queue.get(), timeout=DEFAULT_EVENT_STREAM_CHECK_TIMEOUT
                 )
                 consecutive_timeouts = 0  # Reset timeout counter on successful event
-                yield event
+                try:
+                    yield event
+                except GeneratorExit:
+                    # Catch GeneratorExit during yield - this happens when the consumer
+                    # closes the generator (e.g., client disconnect).
+                    log_debug_event(
+                        logger,
+                        f"GeneratorExit caught during yield_events_from_queue yield: run_id={run_id}",
+                        "ag_ui.generator_exit_during_yield_from_queue",
+                        run_id=run_id,
+                        thread_id=thread_id,
+                    )
+                    return
             except asyncio.TimeoutError:
                 consecutive_timeouts += 1
                 # Check if generator is done and queue is empty

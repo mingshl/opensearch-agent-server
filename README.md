@@ -20,7 +20,11 @@ OpenSearch Dashboards (AG-UI)
     OpenSearch Agent Server
     ├── Router (context-based)
     ├── Agent Registry
-    │   ├── ART Agent (strands-agents)
+    │   ├── ART Agent (Search Relevance Testing)
+    │   │   ├── Hypothesis Agent
+    │   │   ├── Evaluation Agent
+    │   │   ├── User Behavior Analysis Agent
+    │   │   └── Online Testing Agent
     │   └── Fallback Agent
     └── OpenSearch MCP Server
             ↓
@@ -165,18 +169,13 @@ The server will start on `http://localhost:8001`
 
 ```bash
 # Check server health
-curl http://localhost:8001/health
+./scripts/test_health.sh
 
 # List available agents
-curl http://localhost:8001/agents
+./scripts/test_agents.sh
 
 # Test agent interaction (requires OpenSearch running)
-curl -X POST http://localhost:8001/runs \
-  -H "Content-Type: application/json" \
-  -d '{
-    "input": "Show me recent logs",
-    "context": [{"appId": "discover"}]
-  }'
+./scripts/test_run.sh "Show me recent logs"
 ```
 
 ### Integration with OpenSearch Dashboards
@@ -279,6 +278,15 @@ opensearch-agent-server/
 ├── pyproject.toml       # Project metadata
 └── .env.example         # Environment template
 ```
+
+## Specialized Agents (ART)
+
+The **ART Agent** (Search Relevance Testing) is a specialized orchestrator that coordinates four sub-agents to help improve search relevance:
+
+- **Hypothesis Agent** — Analyzes search quality issues, examines results and user behavior (UBI) data, and generates actionable hypotheses. It uses pairwise experiments to quantitatively assess how search results change with proposed improvements.
+- **Evaluation Agent** — Performs offline search relevance evaluation. It calculates key metrics like NDCG, MAP, and Precision using either LLM-generated judgments or click-based judgments from UBI data.
+- **User Behavior Analysis Agent** — Analyzes User Behavior Insights (UBI) data to understand actual user engagement. It identifies patterns in click-through rates (CTR), zero-click rates, and engagement rankings to pinpoint where search is failing.
+- **Online Testing Agent** — Runs interleaved A/B tests using simulated user behavior. This provides online-style evaluation by comparing configurations under realistic click models (position-based, cascade, etc.) and testing for statistical significance.
 
 ## API Endpoints
 

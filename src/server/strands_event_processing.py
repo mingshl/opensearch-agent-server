@@ -9,6 +9,7 @@ Strands agent events and converts them to AG-UI protocol events.
 
 from __future__ import annotations
 
+import asyncio
 import uuid
 from collections.abc import AsyncIterator
 
@@ -351,7 +352,20 @@ async def process_strands_event_stream(
                                 run_id=run_id,
                                 message_id=message_id,
                             )
-                        yield event_to_yield
+                        try:
+                            yield event_to_yield
+                        except GeneratorExit:
+                            # Catch GeneratorExit during yield - this happens when the consumer
+                            # closes the generator. We should stop processing and return
+                            # to trigger the finally block for cleanup.
+                            log_debug_event(
+                                logger,
+                                f"GeneratorExit caught during yield: run_id={run_id}",
+                                "ag_ui.generator_exit_during_yield",
+                                run_id=run_id,
+                                thread_id=thread_id,
+                            )
+                            return
 
                     # Stop processing if signaled (set halt flag to consume remaining events silently)
                     if should_stop:
@@ -372,6 +386,21 @@ async def process_strands_event_stream(
                 # Break outer loop if should_stop was set (but we'll continue consuming silently)
                 if should_stop_processing:
                     break
+    except GeneratorExit:
+        # Catch GeneratorExit during iteration - this happens when the consumer
+        # closes the generator. We should stop processing and return
+        # to trigger the finally block for cleanup.
+        log_debug_event(
+            logger,
+            f"GeneratorExit caught during iteration: run_id={run_id}",
+            "ag_ui.generator_exit_during_iteration",
+            run_id=run_id,
+            thread_id=thread_id,
+        )
+        return
+    except (asyncio.CancelledError, Exception):
+        # Re-raise other exceptions to be handled by the caller
+        raise
     finally:
         # Properly close the async generator to avoid context detachment errors
         # This matches the official implementation pattern
