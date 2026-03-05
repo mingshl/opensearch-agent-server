@@ -5,7 +5,6 @@ This directory contains shell scripts for testing the OpenSearch Agent Server en
 ## Prerequisites
 
 - `curl` installed
-- `python3` installed (for JSON formatting)
 - OpenSearch Agent Server running (default: `localhost:8001`)
 
 ## Available Scripts
