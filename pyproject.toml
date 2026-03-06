@@ -26,6 +26,9 @@ dependencies = [
     "PyJWT>=2.8.0",
     "sqlalchemy>=2.0.0",
     "aiosqlite",
+    "opentelemetry-sdk",
+    "opentelemetry-exporter-otlp-proto-http",
+    "openinference-instrumentation-bedrock",
 ]
 
 [project.optional-dependencies]
@@ -58,12 +61,18 @@ python_files = ["test_*.py"]
 python_classes = ["Test*"]
 python_functions = ["test_*"]
 asyncio_mode = "auto"
+pythonpath = ["src", "tests"]
+markers = [
+    "unit: unit tests (no external services)",
+    "integration: integration tests (may require external services)",
+]
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/server", "src/orchestrator", "src/agents", "src/utils"]
+packages = ["src/server", "src/orchestrator", "src/agents", "src/utils", "src/tools"]
 
 [tool.hatch.build.sources]
 "src/server" = "server"
 "src/orchestrator" = "orchestrator"
 "src/agents" = "agents"
 "src/utils" = "utils"
+"src/tools" = "tools"

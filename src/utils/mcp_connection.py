@@ -22,11 +22,6 @@ from utils.logging_helpers import (
 
 logger = get_logger(__name__)
 
-# Import monitor - will be available if in Chainlit context
-# Chainlit monitor removed — not used in opensearch-agent-server
-MONITOR_AVAILABLE = False
-get_monitor = None
-
 # Import AG-UI emitter - will be available if in AG-UI context
 try:
     from utils.tool_event_emitter import get_ag_ui_emitter
@@ -143,10 +138,9 @@ class MCPConnectionManager:
 
         This method dynamically generates a wrapper function that:
         1. Extracts parameters from the MCP tool's input schema
-        2. Wraps the tool call with Chainlit monitoring (if available)
-        3. Wraps the tool call with AG-UI event emission (if available)
-        4. Calls the actual MCP tool via the active session
-        5. Returns the tool result
+        2. Wraps the tool call with AG-UI event emission (if available)
+        3. Calls the actual MCP tool via the active session
+        4. Returns the tool result
 
         The generated wrapper function is decorated with @tool to make it
         available to Strands agents.
@@ -197,35 +191,6 @@ async def {tool_def.name}_wrapper({param_signature}):
     if not current_session:
         raise RuntimeError("MCP session is not initialized or has been closed")
 
-    # Get activity monitor from module-level import (if available)
-    monitor = None
-    if MONITOR_AVAILABLE and get_monitor:
-        try:
-            monitor = get_monitor()
-            log_debug_event(
-                logger,
-                "[MCP Tool Wrapper] Monitor retrieved.",
-                "mcp.monitor_retrieved",
-                tool_name="{tool_def.name}",
-            )
-        except Exception as e:
-            log_debug_event(
-                logger,
-                "[MCP Tool Wrapper] Failed to get monitor.",
-                "mcp.monitor_get_failed",
-                tool_name="{tool_def.name}",
-                error=str(e),
-            )
-            pass  # Monitor not available in this context
-    else:
-        log_debug_event(
-            logger,
-            "[MCP Tool Wrapper] Monitor not available.",
-            "mcp.monitor_not_available",
-            monitor_available=MONITOR_AVAILABLE,
-            get_monitor=get_monitor,
-        )
-
     # Get AG-UI event emitter (if available)
     ag_ui_emitter = None
     if GET_AG_UI_EMITTER_AVAILABLE and get_ag_ui_emitter:
@@ -241,58 +206,9 @@ async def {tool_def.name}_wrapper({param_signature}):
             )
             pass  # Emitter not available in this context
 
-    # Use monitor and/or AG-UI emitter if available
-    if monitor and ag_ui_emitter:
-        # Both Chainlit monitor and AG-UI emitter available
-        async with monitor.tool_call('{tool_def.name}', **kwargs) as step:
-            async with ag_ui_emitter.tool_call('{tool_def.name}', **kwargs) as tool_call_id:
-                try:
-                    result = await current_session.call_tool('{tool_def.name}', kwargs)
-                except Exception as e:
-                    error_msg = str(e)
-                    if "ClosedResourceError" in error_msg or "closed" in error_msg.lower():
-                        return f"Error: MCP connection closed. Tool '{tool_def.name}' failed. The OpenSearch MCP server may have crashed or the connection was lost. Please refresh the page to reinitialize."
-                    raise
-                if isinstance(result.content, list) and len(result.content) > 0:
-                    content_item = result.content[0]
-                    if hasattr(content_item, 'text'):
-                        result_str = content_item.text
-                    else:
-                        result_str = str(content_item)
-                else:
-                    result_str = str(result.content)
-
-                # Set result for AG-UI emitter
-                await ag_ui_emitter.set_tool_call_result(tool_call_id, result_str)
-                # Show result preview in step output
-                preview = result_str[:200] + "..." if len(result_str) > 200 else result_str
-                step.output = "✓ Result: " + preview
-                return result_str
-    elif monitor:
-        # Only Chainlit monitor available
-        async with monitor.tool_call('{tool_def.name}', **kwargs) as step:
-            try:
-                result = await current_session.call_tool('{tool_def.name}', kwargs)
-            except Exception as e:
-                error_msg = str(e)
-                if "ClosedResourceError" in error_msg or "closed" in error_msg.lower():
-                    return f"Error: MCP connection closed. Tool '{tool_def.name}' failed. The OpenSearch MCP server may have crashed or the connection was lost. Please refresh the page to reinitialize."
-                raise
-            if isinstance(result.content, list) and len(result.content) > 0:
-                content_item = result.content[0]
-                if hasattr(content_item, 'text'):
-                    result_str = content_item.text
-                else:
-                    result_str = str(content_item)
-            else:
-                result_str = str(result.content)
-
-            # Show result preview in step output
-            preview = result_str[:200] + "..." if len(result_str) > 200 else result_str
-            step.output = "✓ Result: " + preview
-            return result_str
-    elif ag_ui_emitter:
-        # Only AG-UI emitter available
+    # Use AG-UI emitter if available
+    if ag_ui_emitter:
+        # AG-UI emitter available
         async with ag_ui_emitter.tool_call('{tool_def.name}', **kwargs) as tool_call_id:
             try:
                 result = await current_session.call_tool('{tool_def.name}', kwargs)
@@ -336,8 +252,6 @@ async def {tool_def.name}_wrapper({param_signature}):
                 "manager": self,
                 "logger": logger,
                 "log_debug_event": log_debug_event,
-                "MONITOR_AVAILABLE": MONITOR_AVAILABLE,
-                "get_monitor": get_monitor,
                 "GET_AG_UI_EMITTER_AVAILABLE": GET_AG_UI_EMITTER_AVAILABLE,
                 "get_ag_ui_emitter": get_ag_ui_emitter,
             }

@@ -5,8 +5,7 @@ Emits AG-UI events when tools are called at the Python level.
 This allows internal tool calls (that don't generate Strands events) to be
 displayed in the AG-UI frontend.
 
-Similar to Chainlit's AgentActivityMonitor, but emits AG-UI protocol events
-instead of creating Chainlit steps.
+Similar to an activity monitor, but emits AG-UI protocol events.
 """
 
 from __future__ import annotations
@@ -108,7 +107,7 @@ class AGUIToolEventEmitter:
             message_id=self.message_id,
         )
 
-        # If callback is available, yield directly (like Chainlit does)
+        # If callback is available, yield directly
         # Otherwise, queue for later processing
         if self.yield_callback:
             try:
@@ -207,7 +206,7 @@ class AGUIToolEventEmitter:
             error=error,
         )
 
-        # If callback is available, yield directly (like Chainlit does)
+        # If callback is available, yield directly
         # Otherwise, queue for later processing
         if self.yield_callback:
             try:
@@ -264,7 +263,7 @@ def set_ag_ui_emitter(emitter: AGUIToolEventEmitter | None) -> None:
     """Set the AG-UI event emitter for the current thread/context.
 
     This allows tool wrappers to access the emitter without explicit passing.
-    Similar to Chainlit's user_session pattern.
+    Similar to a user_session pattern.
 
     Args:
         emitter: AGUIToolEventEmitter instance or None to clear

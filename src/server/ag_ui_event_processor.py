@@ -353,7 +353,7 @@ async def _process_event_stream(
     python_tool_event_queue: asyncio.Queue[str] = asyncio.Queue(maxsize=max_queue_size)
 
     # Create a callback to process and queue encoded events immediately
-    # This mimics Chainlit's immediate UI update pattern
+    # This mimics external's immediate UI update pattern
     async def process_and_queue_python_event(event: AGUIEvent) -> None:
         """Process Python tool event and queue the encoded result immediately.
 
@@ -467,6 +467,18 @@ async def _process_event_stream(
             except asyncio.QueueEmpty:
                 # Queue is empty - break to continue with Strands event processing
                 break
+            except GeneratorExit:
+                # Catch GeneratorExit during yield - this happens when the consumer
+                # closes the generator. We should stop processing and return
+                # to trigger any cleanup.
+                log_debug_event(
+                    logger,
+                    f"GeneratorExit caught during Python tool event yield: run_id={run_id}",
+                    "ag_ui.generator_exit_during_python_yield",
+                    run_id=run_id,
+                    thread_id=thread_id,
+                )
+                return
 
         # STATE TRANSITION: Check Exit Condition
         # Exit if both streams are done and no events remain
@@ -511,21 +523,20 @@ async def _process_event_stream(
                 # Transition: temp -> actual_message_id (first event only)
                 # Update emitter message_id from first event (or if it changed)
                 # This ensures Python tool events are associated with correct message
-                if current_message_id and tool_emitter.message_id != current_message_id:
-                    old_message_id = tool_emitter.message_id
-                    tool_emitter.message_id = current_message_id
-                    if old_message_id == "temp":
-                        log_debug_event(
-                            logger,
-                            f"Updated AG-UI tool event emitter message_id: {old_message_id} -> {current_message_id}",
-                            "ag_ui.tool_emitter_message_id_updated",
-                            old_message_id=old_message_id,
-                            new_message_id=current_message_id,
-                            run_id=run_id,
-                            thread_id=thread_id,
-                        )
-
-                yield encoded_event
+                try:
+                    yield encoded_event
+                except GeneratorExit:
+                    # Catch GeneratorExit during yield - this happens when the consumer
+                    # closes the generator. We should stop processing and return
+                    # to trigger any cleanup.
+                    log_debug_event(
+                        logger,
+                        f"GeneratorExit caught during Strands event yield: run_id={run_id}",
+                        "ag_ui.generator_exit_during_strands_yield",
+                        run_id=run_id,
+                        thread_id=thread_id,
+                    )
+                    return
             # STATE TRANSITION: Handle Timeout
             # Transition: Waiting -> Timeout (no event yet)
             # If strands_event is None and stream_done is False, timeout occurred
@@ -556,6 +567,18 @@ async def _process_event_stream(
         except asyncio.QueueEmpty:
             # Queue is empty - all remaining events have been yielded
             break
+        except GeneratorExit:
+            # Catch GeneratorExit during yield - this happens when the consumer
+            # closes the generator. We should stop processing and return
+            # to trigger any cleanup.
+            log_debug_event(
+                logger,
+                f"GeneratorExit caught during final Python tool event yield: run_id={run_id}",
+                "ag_ui.generator_exit_during_final_python_yield",
+                run_id=run_id,
+                thread_id=thread_id,
+            )
+            return
 
     # Clean up: clear emitter when stream ends
     if tool_emitter:
@@ -715,13 +738,13 @@ async def generate_events(
         Encoded SSE event strings
 
     """
-    from contextlib import nullcontext
+    from utils.otel_init import using_user
 
     # Initialize counter
     event_count = 0
 
-    # Phoenix tracing removed for opensearch-agent-server; use nullcontext as no-op
-    with nullcontext():
+    # Set up OpenInference user tracing context (no-op if OTel not available)
+    with using_user(user_id):
         try:
             # Process event stream - `async for` iterates over async generator
             async for encoded_event in _process_event_stream(
@@ -734,13 +757,41 @@ async def generate_events(
             ):
                 event_count += 1
                 # Yield each encoded event to caller
-                yield encoded_event
+                try:
+                    yield encoded_event
+                except GeneratorExit:
+                    # Catch GeneratorExit during yield - this happens when the consumer
+                    # closes the generator. We should stop processing and return
+                    # to trigger any cleanup.
+                    log_debug_event(
+                        logger,
+                        f"GeneratorExit caught during generate_events yield: run_id={run_id}",
+                        "ag_ui.generator_exit_during_generate_events_yield",
+                        run_id=run_id,
+                        thread_id=thread_id,
+                    )
+                    return
+        except GeneratorExit:
+            # Catch GeneratorExit - this happens when the consumer
+            # closes the generator. We should stop processing and return
+            # to trigger any cleanup.
+            log_debug_event(
+                logger,
+                f"GeneratorExit caught in generate_events: run_id={run_id}",
+                "ag_ui.generator_exit_in_generate_events",
+                run_id=run_id,
+                thread_id=thread_id,
+            )
+            return
         except Exception as e:
             # Catch any exception during processing and emit run error event
             error_event_str = _handle_run_error(
                 event_processor, run_id, thread_id, user_id, e
             )
-            yield error_event_str
+            try:
+                yield error_event_str
+            except GeneratorExit:
+                return
         finally:
             # Ensure cleanup happens regardless of success/failure
             # Always complete run cleanup

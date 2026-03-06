@@ -17,6 +17,7 @@ venv/
 .ruff_cache/
 .coverage
 htmlcov/
+.output.txt
 
 # Personal files
 ROADMAP.md

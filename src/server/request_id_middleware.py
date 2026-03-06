@@ -13,7 +13,7 @@ header so clients can correlate requests with server logs.
 - Resets the context variable in a finally block so it does not leak across requests
 
 **When request_id is not set (e.g. "-" in logs):**
-- Non-HTTP entry points: Chainlit, tests, scripts, lifespan, asyncio exception handler
+- Non-HTTP entry points: external, tests, scripts, lifespan, asyncio exception handler
 - RequestIdFilter uses "-" when the context variable is unset
 """
 

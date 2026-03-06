@@ -93,7 +93,7 @@ def create_run_route(
     # Convert to RunAgentInput for compatibility with downstream functions
     run_agent_input = input_data.to_run_agent_input()
 
-    # Extract user ID for Phoenix tracing
+    # Extract user ID for OTel tracing
     user_id = get_user_id_from_request(request)
 
     # Prevent duplicate concurrent runs: if persistence is enabled, reject when

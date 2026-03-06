@@ -18,7 +18,7 @@ def extract_user_message_from_multimodal_content(content: str | list | Any) -> s
     """Extract user message text from multimodal content (text + file attachments).
 
     Handles AG-UI protocol BinaryInputContent by decoding base64 data for text files
-    and including file content in the message, similar to Chainlit's file handling.
+    and including file content in the message, similar to external's file handling.
 
     Args:
         content: Message content which can be:

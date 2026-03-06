@@ -2,7 +2,7 @@
 AG-UI Data Persistence Service
 
 Provides database persistence for AG-UI conversations, runs, messages, and events.
-Uses SQLAlchemy ORM (like Chainlit's approach) for better maintainability and type safety.
+Uses SQLAlchemy ORM (like external's approach) for better maintainability and type safety.
 """
 
 from __future__ import annotations
@@ -137,7 +137,7 @@ class AGUIPersistence:
     """
     Persistence service for AG-UI conversations and events.
 
-    Uses SQLAlchemy ORM (similar to Chainlit's SQLAlchemyDataLayer pattern)
+    Uses SQLAlchemy ORM (similar to external's SQLAlchemyDataLayer pattern)
     for better maintainability and type safety.
 
     Stores:

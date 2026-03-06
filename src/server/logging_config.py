@@ -9,7 +9,7 @@ configuration helpers.
 - `request_id_contextvar` - Context variable set by RequestIdMiddleware per request
 - `configure_logging()` - Configures logging with JSON or human-readable format
 - `get_logging_config()` - Reads from get_config() (for AG-UI server)
-- `get_logging_config_from_env()` - Reads only AG_UI_LOG_* from os.environ (for Chainlit, tests, scripts; no get_config dependency)
+- `get_logging_config_from_env()` - Reads only AG_UI_LOG_* from os.environ (for external, tests, scripts; no get_config dependency)
 
 **Usage Example:**
 ```python
@@ -19,7 +19,7 @@ from server.logging_config import configure_logging, get_logging_config, get_log
 use_json, log_level = get_logging_config()
 configure_logging(use_json=use_json, log_level=log_level)
 
-# Chainlit, tests, scripts: from env only (no get_config)
+# external, tests, scripts: from env only (no get_config)
 use_json, log_level = get_logging_config_from_env()
 configure_logging(use_json=use_json, log_level=log_level, force=True)
 
@@ -43,7 +43,7 @@ from typing import Any
 from server.config import get_config
 
 # Context variable for request-scoped request ID. Set by RequestIdMiddleware for
-# HTTP requests; unset for non-HTTP entry points (Chainlit, tests, scripts).
+# HTTP requests; unset for non-HTTP entry points (external, tests, scripts).
 # RequestIdFilter injects this into each log record, using "-" when unset.
 request_id_contextvar: contextvars.ContextVar[str | None] = contextvars.ContextVar(
     "request_id", default=None
@@ -140,7 +140,7 @@ class RequestIdFilter(logging.Filter):
     """Injects request_id from context into each log record.
 
     Reads request_id_contextvar (set by RequestIdMiddleware for HTTP requests).
-    When unset (e.g. Chainlit, tests, startup), uses "-" so the human-readable
+    When unset (e.g. external, tests, startup), uses "-" so the human-readable
     formatter and JSON output have a consistent field.
     """
 
@@ -195,12 +195,12 @@ def configure_logging(
 def get_logging_config_from_env() -> tuple[bool, str]:
     """Get logging format and level from AG_UI_LOG_* env vars only.
 
-    Use for entry points that run without the AG-UI server (Chainlit, tests,
+    Use for entry points that run without the AG-UI server (external, tests,
     scripts). Does not call get_config(), so it avoids server config and
     works when AG-UI server env is not set.
 
     Uses the same env var names (AG_UI_LOG_FORMAT, AG_UI_LOG_LEVEL) so a
-    shared .env keeps logging in sync when both Chainlit and the server run.
+    shared .env keeps logging in sync when both external and the server run.
 
     Returns:
         Tuple of (use_json: bool, log_level: str). Defaults: (False, "INFO").

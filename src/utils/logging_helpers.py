@@ -159,7 +159,7 @@ def log_info_event(
 
     Use for:
     - Lifecycle events (e.g., "Starting AG-UI run", "Run completed")
-    - Configuration status (e.g., "Persistence enabled", "Phoenix initialized")
+    - Configuration status (e.g., "Persistence enabled", "Telemetry initialized")
     - Important state changes that operators should be aware of
 
     Args:
