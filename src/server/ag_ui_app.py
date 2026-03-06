@@ -312,28 +312,18 @@ def create_app(config_override: ServerConfig | None = None) -> FastAPI:
         # --- Orchestrator setup ---
         from orchestrator.registry import AgentRegistration, AgentRegistry
         from orchestrator.router import PageContextRouter
-        from agents.fallback_agent import create_fallback_agent
         from agents.art_agent import create_art_agent
 
         registry = AgentRegistry()
         opensearch_url = config_resolved.opensearch_url
 
-        # Register ART agent (search relevance page)
+        # Register ART agent (search relevance page + default fallback for testing)
         registry.register(AgentRegistration(
             name="art",
             description="Search Relevance Testing agent (ART) — hypothesis generation, "
             "evaluation, UBI analysis, and online A/B testing",
             factory=create_art_agent,
             page_contexts=["search-relevance", "searchRelevance"],
-            is_fallback=False,
-        ))
-
-        # Register fallback agent (handles all unmatched page contexts)
-        registry.register(AgentRegistration(
-            name="fallback",
-            description="General OpenSearch assistant with MCP tools",
-            factory=create_fallback_agent,
-            page_contexts=[],
             is_fallback=True,
         ))
 
@@ -350,22 +340,24 @@ def create_app(config_override: ServerConfig | None = None) -> FastAPI:
 
         router = PageContextRouter(registry)
 
-        # Agent cache: keyed by agent name (one instance per sub-agent type)
-        _agent_cache: dict[str, object] = {}
-
         async def create_agent_for_request(page_context: str | None = None) -> object:
-            """Orchestrator factory: route by page_context, create/cache agent."""
+            """Orchestrator factory: route by page_context, create agent.
+
+            A fresh agent is created per call so that each conversation thread
+            (cached by StrandsAgent._thread_agents) gets its own Strands Agent
+            with its own conversation history. Sharing a single Agent instance
+            across threads would corrupt conversation state.
+            """
             registration = router.route(page_context)
-            if registration.name not in _agent_cache:
-                _agent_cache[registration.name] = await registration.factory(opensearch_url)
-                log_info_event(
-                    logger,
-                    f"Created agent '{registration.name}' for page_context='{page_context}'",
-                    "ag_ui.agent_created",
-                    agent_name=registration.name,
-                    page_context=page_context,
-                )
-            return _agent_cache[registration.name]
+            agent = await registration.factory(opensearch_url)
+            log_info_event(
+                logger,
+                f"Created agent '{registration.name}' for page_context='{page_context}'",
+                "ag_ui.agent_created",
+                agent_name=registration.name,
+                page_context=page_context,
+            )
+            return agent
 
         strands_agent = StrandsAgent(
             agent_factory=create_agent_for_request,

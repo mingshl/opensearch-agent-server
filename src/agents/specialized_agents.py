@@ -35,10 +35,11 @@ bedrock_session = boto3.Session(
     region_name=AWS_REGION,
 )
 
-# Get Bedrock inference profile ARN from environment
-INFERENCE_PROFILE_ARN = os.getenv("BEDROCK_INFERENCE_PROFILE_ARN")
-
-BEDROCK_HAIKU_INFERENCE_PROFILE_ARN = os.getenv("BEDROCK_HAIKU_INFERENCE_PROFILE_ARN")
+# NOTE: Model ARNs are intentionally NOT read at module level.
+# create_art_agent() sets BEDROCK_INFERENCE_PROFILE_ARN / BEDROCK_HAIKU_INFERENCE_PROFILE_ARN
+# as defaults *after* this module is imported, so module-level os.getenv() would
+# always return None when the env var is not set before server start.
+# Each agent function reads the env var at call time instead.
 
 # System prompts for specialized agents
 HYPOTHESIS_GENERATOR_SYSTEM_PROMPT = """You are an expert in generating search relevance improvement hypotheses.
@@ -289,7 +290,7 @@ async def hypothesis_agent(query: str) -> str:
             retries={"max_attempts": 0},  # Fail fast, no retries
         )
         model = BedrockModel(
-            model_id=INFERENCE_PROFILE_ARN,
+            model_id=os.getenv("BEDROCK_INFERENCE_PROFILE_ARN"),
             boto_session=bedrock_session,
             boto_client_config=boto_config,
             streaming=True,  # Enable streaming for real-time progress
@@ -404,7 +405,7 @@ async def evaluation_agent(query: str) -> str:
             retries={"max_attempts": 0},  # Fail fast, no retries
         )
         model = BedrockModel(
-            model_id=INFERENCE_PROFILE_ARN,
+            model_id=os.getenv("BEDROCK_INFERENCE_PROFILE_ARN"),
             boto_session=bedrock_session,
             boto_client_config=boto_config,
             streaming=True,  # Enable streaming for real-time progress
@@ -495,7 +496,7 @@ async def user_behavior_analysis_agent(query: str) -> str:
             retries={"max_attempts": 0},  # Fail fast, no retries
         )
         model = BedrockModel(
-            model_id=BEDROCK_HAIKU_INFERENCE_PROFILE_ARN,
+            model_id=os.getenv("BEDROCK_HAIKU_INFERENCE_PROFILE_ARN"),
             boto_session=bedrock_session,
             boto_client_config=boto_config,
             streaming=True,  # Enable streaming for real-time progress
@@ -584,7 +585,7 @@ async def online_testing_agent(query: str) -> str:
             retries={"max_attempts": 0},  # Fail fast, no retries
         )
         model = BedrockModel(
-            model_id=INFERENCE_PROFILE_ARN,
+            model_id=os.getenv("BEDROCK_INFERENCE_PROFILE_ARN"),
             boto_session=bedrock_session,
             boto_client_config=boto_config,
             streaming=True,  # Enable streaming for real-time progress

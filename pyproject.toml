@@ -26,6 +26,9 @@ dependencies = [
     "PyJWT>=2.8.0",
     "sqlalchemy>=2.0.0",
     "aiosqlite",
+    "opentelemetry-sdk",
+    "opentelemetry-exporter-otlp-proto-http",
+    "openinference-instrumentation-bedrock",
 ]
 
 [project.optional-dependencies]

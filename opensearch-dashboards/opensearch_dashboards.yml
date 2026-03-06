@@ -1,0 +1,64 @@
+# OpenSearch Dashboards Configuration for OpenSearch Agent Server
+# Copy these settings to your OpenSearch-Dashboards/config/opensearch_dashboards.yml
+
+# ============================================
+# OpenSearch Connection
+# ============================================
+server.host: "0.0.0.0"
+opensearch.hosts: ["http://opensearch-art:9200"]
+#opensearch.username: "admin"
+#opensearch.password: "Gr3at#Search$2024"
+opensearch.ssl.verificationMode: none
+
+# For secured OpenSearch cluster, uncomment and set credentials:
+# opensearch.username: "admin"
+# opensearch.password: "admin"
+
+# ============================================
+# OpenSearch Agent Server Integration
+# ============================================
+
+# Enable new UI header (required for chat button to appear)
+uiSettings:
+  overrides:
+    "home:useNewHomePage": true
+
+# Enable context provider
+# This sends the current page context (app ID, filters, queries) to the agent
+contextProvider:
+  enabled: true
+
+# Enable chat with opensearch agent server
+chat:
+  enabled: true
+  agUiUrl: "http://host.docker.internal:8001/runs" # OpenSearch agent server endpoint
+  # Optional: Use ML Commons agent instead (requires ml-commons plugin)
+  # mlCommonsAgentId: "your-agent-id"
+# ============================================
+# Optional Settings
+# ============================================
+
+# Server port (default: 5601)
+# server.port: 5601
+
+# Server host (default: localhost)
+# server.host: "localhost"
+
+# CORS settings (if needed)
+# server.cors: true
+# server.cors.origin: ["http://localhost:8001"]
+
+# ============================================
+# Troubleshooting
+# ============================================
+
+# If you encounter CORS issues, add:
+# server.cors: true
+# server.cors.allowCredentials: true
+# server.cors.allowOrigin: ["http://localhost:8001"]
+
+# If SSL verification fails:
+# opensearch.ssl.verificationMode: none
+
+# Enable verbose logging for debugging:
+# logging.verbose: true
