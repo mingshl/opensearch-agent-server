@@ -63,7 +63,7 @@ def opensearch_client(
 
     Skips the test automatically if OpenSearch is not reachable.
     Start OpenSearch locally with:
-        docker compose -f docker-compose-opensearch.yml up -d
+        docker compose -f docker-compose.yml up -d
     """
     from utils.opensearch_client import OpenSearchClientManager
 

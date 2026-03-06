@@ -108,62 +108,20 @@ AG_UI_LOG_LEVEL=INFO
 
 ### Complete Setup (3-Component Stack)
 
-To run the full demo with OpenSearch, Agent Server, and Dashboards:
+To run the full demo, first build the images and start the containers:
 
-**Terminal 1 - OpenSearch**
-```bash
-# Start OpenSearch on port 9200
-docker run -d -p 9200:9200 -p 9600:9600 \
-  -e "discovery.type=single-node" \
-  -e "OPENSEARCH_INITIAL_ADMIN_PASSWORD=Admin1234!" \
-  opensearchproject/opensearch:latest
-
-# Verify
-curl http://localhost:9200 -u admin:Admin1234!
+```
+docker compose build
+docker compose up
 ```
 
-**Terminal 2 - Agent Server**
-```bash
-# Configure and start opensearch agent server
-cd opensearch-agent-server
-cp .env.example .env
-# Edit .env with your settings
-source .venv/bin/activate
-python run_server.py
+Start the ART AG-UI server:
 
-# Server starts on http://localhost:8001
+```
+python3 run_server.py
 ```
 
-**Terminal 3 - OpenSearch Dashboards**
-```bash
-# Start dashboard (requires Node.js 22+)
-cd OpenSearch-Dashboards
-# Ensure config/opensearch_dashboards.yml has chat.agUiUrl configured
-yarn start --no-base-path
-
-# Dashboard opens on http://localhost:5601
-```
-
-**Access the Chat**
-- Open http://localhost:5601
-- Click the chat icon (💬) in the top-right header
-- Start asking questions about your data!
-
-## Usage
-
-### Start the Server
-
-```bash
-python run_server.py
-```
-
-Or using uvicorn directly:
-
-```bash
-uvicorn server.ag_ui_app:app --host 0.0.0.0 --port 8001
-```
-
-The server will start on `http://localhost:8001`
+Access the chat by opening http://localhost:5601, click on the AI Assistant button.
 
 ### Verify Installation
 
@@ -177,62 +135,6 @@ The server will start on `http://localhost:8001`
 # Test agent interaction (requires OpenSearch running)
 ./scripts/test_run.sh "Show me recent logs"
 ```
-
-### Integration with OpenSearch Dashboards
-
-1. **Start OpenSearch** (port 9200)
-   ```bash
-   # Using Docker
-   docker run -d -p 9200:9200 -p 9600:9600 \
-     -e "discovery.type=single-node" \
-     -e "OPENSEARCH_INITIAL_ADMIN_PASSWORD=Admin1234!" \
-     opensearchproject/opensearch:latest
-
-   # Or use your local OpenSearch installation
-   ```
-
-2. **Start OpenSearch Agent Server** (port 8001)
-   ```bash
-   cd opensearch-agent-server
-   source .venv/bin/activate
-   python run_server.py
-   ```
-
-3. **Configure OpenSearch Dashboards**
-
-   Edit `config/opensearch_dashboards.yml`:
-
-   ```yaml
-   # OpenSearch connection
-   opensearch.hosts: ["http://localhost:9200"]
-   opensearch.ssl.verificationMode: none
-
-   # Enable new UI header (required for chat button)
-   uiSettings:
-     overrides:
-       "home:useNewHomePage": true
-
-   # Enable context provider (sends page context to agent)
-   contextProvider:
-     enabled: true
-
-   # Enable chat with opensearch agent server
-   chat:
-     enabled: true
-     agUiUrl: "http://localhost:8001/runs"
-   ```
-
-4. **Start OpenSearch Dashboards** (port 5601)
-   ```bash
-   cd OpenSearch-Dashboards
-   yarn start --no-base-path
-   ```
-
-5. **Access the Chat Interface**
-   - Open http://localhost:5601 in your browser
-   - Look for the chat icon in the top-right header
-   - Click to open the assistant panel
-   - Start chatting with your data!
 
 ## Development
 
@@ -255,30 +157,6 @@ ruff format .
 ruff check .
 ```
 
-### Project Structure
-
-```
-opensearch-agent-server/
-├── src/
-│   ├── agents/          # Agent implementations
-│   │   ├── art_agent.py      # Main agent using strands-agents
-│   │   └── fallback_agent.py # Fallback for errors
-│   ├── orchestrator/    # Routing and registry
-│   │   ├── router.py         # Context-based routing
-│   │   └── registry.py       # Agent registry
-│   ├── server/          # FastAPI application
-│   │   ├── ag_ui_app.py      # Main FastAPI app
-│   │   ├── run_routes.py     # AG-UI protocol endpoints
-│   │   ├── config.py         # Configuration management
-│   │   └── ...               # Middleware, auth, etc.
-│   └── utils/           # Utilities
-│       └── mcp_connection.py # OpenSearch MCP client
-├── tests/               # Test suite
-├── run_server.py        # Entry point
-├── pyproject.toml       # Project metadata
-└── .env.example         # Environment template
-```
-
 ## Specialized Agents (ART)
 
 The **ART Agent** (Search Relevance Testing) is a specialized orchestrator that coordinates four sub-agents to help improve search relevance:
@@ -287,52 +165,6 @@ The **ART Agent** (Search Relevance Testing) is a specialized orchestrator that 
 - **Evaluation Agent** — Performs offline search relevance evaluation. It calculates key metrics like NDCG, MAP, and Precision using either LLM-generated judgments or click-based judgments from UBI data.
 - **User Behavior Analysis Agent** — Analyzes User Behavior Insights (UBI) data to understand actual user engagement. It identifies patterns in click-through rates (CTR), zero-click rates, and engagement rankings to pinpoint where search is failing.
 - **Online Testing Agent** — Runs interleaved A/B tests using simulated user behavior. This provides online-style evaluation by comparing configurations under realistic click models (position-based, cascade, etc.) and testing for statistical significance.
-
-## API Endpoints
-
-### Health Check
-```
-GET /health
-```
-Returns server health status.
-
-### List Agents
-```
-GET /agents
-```
-Returns available agents and their capabilities.
-
-### Create Run (AG-UI Protocol)
-```
-POST /runs
-```
-Creates a new agent run with streaming responses via SSE.
-
-### Get Run Status
-```
-GET /runs/{run_id}
-```
-Returns the status of a specific run.
-
-## Troubleshooting
-
-### OpenSearch Connection Issues
-
-- Verify OpenSearch is running: `curl http://localhost:9200`
-- Check credentials in `.env`
-- Disable SSL verification for local development
-
-### LLM Provider Issues
-
-- **AWS Bedrock**: Ensure AWS credentials are configured
-- **Ollama**: Verify Ollama is running: `ollama list`
-
-### Port Conflicts
-
-If port 8001 is in use, modify the startup command:
-```bash
-uvicorn server.ag_ui_app:app --host 0.0.0.0 --port 8002
-```
 
 ## Contributing
 
