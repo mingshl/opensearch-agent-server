@@ -35,7 +35,6 @@ bedrock_session = boto3.Session(
     region_name=AWS_REGION,
 )
 
-# NOTE: Model ARNs are intentionally NOT read at module level.
 # create_art_agent() sets BEDROCK_INFERENCE_PROFILE_ARN / BEDROCK_HAIKU_INFERENCE_PROFILE_ARN
 # as defaults *after* this module is imported, so module-level os.getenv() would
 # always return None when the env var is not set before server start.

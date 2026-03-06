@@ -8,7 +8,7 @@ services:
       network.host: 0.0.0.0
       DISABLE_SECURITY_PLUGIN: true
       logger.level: info
-      OPENSEARCH_INITIAL_ADMIN_PASSWORD: SuperSecretPassword_123
+      OPENSEARCH_INITIAL_ADMIN_PASSWORD: Mysupersecretpassword_123
       OPENSEARCH_JAVA_OPTS: "-Xms1g -Xmx4g"
     ulimits:
       memlock:

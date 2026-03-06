@@ -31,7 +31,7 @@ contextProvider:
 # Enable chat with opensearch agent server
 chat:
   enabled: true
-  agUiUrl: "http://host.docker.internal:8001/runs" # OpenSearch agent server endpoint
+  agUiUrl: "http://localhost:8001/runs" # OpenSearch agent server endpoint
   # Optional: Use ML Commons agent instead (requires ml-commons plugin)
   # mlCommonsAgentId: "your-agent-id"
 # ============================================
