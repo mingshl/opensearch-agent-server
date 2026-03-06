@@ -1,10 +1,9 @@
 """ART Agent — Search Relevance Testing Sub-Agent.
 
-Orchestrates 4 specialized agents for search relevance tuning:
+Orchestrates 3 specialized agents for search relevance tuning:
   - hypothesis_agent: Generate and test search improvement hypotheses
   - evaluation_agent: Offline relevance evaluation (NDCG, MAP, Precision)
   - user_behavior_analysis_agent: Analyze UBI click data
-  - online_testing_agent: Run interleaved A/B tests
 """
 
 from __future__ import annotations
@@ -19,7 +18,6 @@ from strands.models.bedrock import BedrockModel
 from agents.specialized_agents import (
     evaluation_agent,
     hypothesis_agent,
-    online_testing_agent,
     set_opensearch_tools,
     user_behavior_analysis_agent,
 )
@@ -53,11 +51,6 @@ Your role is to help users solve search quality issues in OpenSearch by coordina
    Use this agent to run pointwise experiments that show the qualitative difference between search configurations
    through search quality metrics.
 
-4. **online_testing_agent**: Use this agent when users want to run interleaved A/B tests to compare
-   search configurations using simulated user behavior. This agent creates interleaved tests, simulates
-   realistic user clicks and impressions, and determines winners using click attribution with statistical
-   significance testing. This provides online-style evaluation that complements offline methods. This agent
-   can deploy a search configuration to production.
 
 Your process:
 1. Understand the user's request
@@ -70,8 +63,7 @@ Apply the search relevance tuning process where possible:
 2. Generate hypotheses including a first sanity check and smoke test using pairwise experiments.
 3. Test the hypothesis using:
    a) Offline evaluation with pointwise experiments (judgment-based metrics)
-   b) Online testing with interleaved A/B tests (simulated user behavior)
-   Choose based on what the user needs - engagement metrics (online) vs. relevance metrics (offline).
+   Choose based on what the user needs.
    Prefer offline if no offline evaluation has been done yet for the current process.
 4. Go back to generating hypotheses if validation fails.
 
@@ -162,7 +154,6 @@ async def create_art_agent(opensearch_url: str) -> Agent:
         tools=[
             user_behavior_analysis_agent,
             hypothesis_agent,
-            online_testing_agent,
             evaluation_agent,
         ],
     )

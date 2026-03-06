@@ -16,10 +16,10 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
+from agents import specialized_agents
 from helpers.specialized_agents_helpers import (
     patch_evaluation_agent_dependencies,
     patch_hypothesis_agent_dependencies,
-    patch_online_testing_agent_dependencies,
     patch_ubi_agent_dependencies,
 )
 
@@ -29,8 +29,6 @@ pytestmark = pytest.mark.unit
 @pytest.fixture(autouse=True)
 def reset_opensearch_tools() -> Generator[None, None, None]:
     """Reset _opensearch_tools before and after each test to ensure isolation."""
-    from agents import specialized_agents
-
     # Save original state
     original_tools = (
         list(specialized_agents._opensearch_tools)
@@ -50,7 +48,7 @@ def reset_opensearch_tools() -> Generator[None, None, None]:
 @pytest.fixture(autouse=True)
 def mock_monitor() -> Generator[None, None, None]:
     """Mock emitter to avoid dependencies."""
-    with patch("utils.monitored_tool.get_ag_ui_emitter", return_value=None):
+    with patch("agents.specialized_agents.monitored_tool", side_effect=lambda x: x):
         yield
 
 
@@ -61,8 +59,6 @@ class TestSpecializedAgentsErrors:
     async def test_hypothesis_agent_tool_failure(self):
         """Test hypothesis agent when tool call fails."""
         # Should handle tool errors gracefully
-        from agents import specialized_agents
-
         specialized_agents._opensearch_tools = [MagicMock()]
 
         mock_agent = MagicMock()
@@ -85,8 +81,6 @@ class TestSpecializedAgentsErrors:
     async def test_evaluation_agent_timeout(self):
         """Test evaluation agent timeout handling."""
         # Should timeout gracefully, emit error event
-        from agents import specialized_agents
-
         specialized_agents._opensearch_tools = [MagicMock()]
 
         mock_agent = MagicMock()
@@ -107,29 +101,6 @@ class TestSpecializedAgentsErrors:
             assert "timed out" in result.lower() or "timeout" in result.lower()
             mock_agent.invoke_async.assert_called_once()
 
-    @pytest.mark.asyncio
-    async def test_online_testing_agent_rate_limit(self):
-        """Test online testing agent rate limit handling."""
-        # Should detect rate limit, retry with backoff
-        from agents import specialized_agents
-
-        specialized_agents._opensearch_tools = [MagicMock()]
-
-        mock_agent = MagicMock()
-        # Simulate rate limit error
-        mock_agent.invoke_async = AsyncMock(
-            side_effect=Exception("429 Too Many Requests - Rate limit exceeded")
-        )
-
-        with patch_online_testing_agent_dependencies(mock_agent):
-            result = await specialized_agents.online_testing_agent(
-                "Run interleaved test"
-            )
-
-            # Should return rate limit message, not generic error
-            assert "Rate limit" in result or "429" in result
-            assert "wait a moment" in result.lower() or "simplifying" in result.lower()
-            mock_agent.invoke_async.assert_called_once()
 
     @pytest.mark.asyncio
     async def test_user_behavior_agent_missing_data(self):
@@ -204,10 +175,6 @@ class TestSpecializedAgentsErrors:
         result = await specialized_agents.user_behavior_analysis_agent("test query")
         assert "Error: OpenSearch tools not configured" in result
 
-        # Test online testing agent without tools
-        result = await specialized_agents.online_testing_agent("test query")
-        assert "Error: OpenSearch tools not configured" in result
-
     @pytest.mark.asyncio
     async def test_hypothesis_agent_agent_creation_error(self):
         """Test hypothesis agent when Agent creation fails."""
@@ -223,9 +190,6 @@ class TestSpecializedAgentsErrors:
         )
         stack.enter_context(patch("agents.specialized_agents.BedrockModel"))
         stack.enter_context(patch("agents.specialized_agents.bedrock_session"))
-        stack.enter_context(
-            patch("agents.specialized_agents.INFERENCE_PROFILE_ARN", "test-arn")
-        )
         stack.enter_context(patch("agents.specialized_agents.list_index"))
         stack.enter_context(patch("agents.specialized_agents.search_index"))
         stack.enter_context(patch("tools.ubi_analytics_tools.get_query_ctr"))
@@ -296,28 +260,3 @@ class TestSpecializedAgentsErrors:
             assert "connect" in result.lower() or "bedrock" in result.lower()
             mock_agent.invoke_async.assert_called_once()
 
-    @pytest.mark.asyncio
-    async def test_online_testing_agent_retry_after_rate_limit(self):
-        """Test online testing agent handles rate limit with proper message."""
-        # Should provide helpful message about rate limits
-        from agents import specialized_agents
-
-        specialized_agents._opensearch_tools = [MagicMock()]
-
-        mock_agent = MagicMock()
-        # Test different rate limit error formats
-        rate_limit_errors = [
-            "rate limit exceeded",
-            "429 Too Many Requests",
-            "Rate limit reached",
-        ]
-
-        for error_msg in rate_limit_errors:
-            mock_agent.invoke_async = AsyncMock(side_effect=Exception(error_msg))
-
-            with patch_online_testing_agent_dependencies(mock_agent):
-                result = await specialized_agents.online_testing_agent("test query")
-
-                # Should detect rate limit in any format
-                assert "Rate limit" in result or "429" in result
-                assert "wait" in result.lower() or "simplifying" in result.lower()

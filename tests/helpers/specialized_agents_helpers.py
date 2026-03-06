@@ -25,9 +25,6 @@ def patch_hypothesis_agent_dependencies(mock_agent: MagicMock) -> ExitStack:
     )
     stack.enter_context(patch("agents.specialized_agents.BedrockModel"))
     stack.enter_context(patch("agents.specialized_agents.bedrock_session"))
-    stack.enter_context(
-        patch("agents.specialized_agents.INFERENCE_PROFILE_ARN", "test-arn")
-    )
     stack.enter_context(patch("agents.specialized_agents.list_index"))
     stack.enter_context(patch("agents.specialized_agents.search_index"))
     stack.enter_context(patch("tools.ubi_analytics_tools.get_query_ctr"))
@@ -79,9 +76,6 @@ def patch_evaluation_agent_dependencies(mock_agent: MagicMock) -> ExitStack:
     )
     stack.enter_context(patch("agents.specialized_agents.BedrockModel"))
     stack.enter_context(patch("agents.specialized_agents.bedrock_session"))
-    stack.enter_context(
-        patch("agents.specialized_agents.INFERENCE_PROFILE_ARN", "test-arn")
-    )
     stack.enter_context(patch("agents.specialized_agents.list_index"))
     stack.enter_context(patch("agents.specialized_agents.search_index"))
     stack.enter_context(patch("tools.judgment_list_tools.get_judgment"))
@@ -144,12 +138,6 @@ def patch_ubi_agent_dependencies(mock_agent: MagicMock) -> ExitStack:
     )
     stack.enter_context(patch("agents.specialized_agents.BedrockModel"))
     stack.enter_context(patch("agents.specialized_agents.bedrock_session"))
-    stack.enter_context(
-        patch(
-            "agents.specialized_agents.BEDROCK_HAIKU_INFERENCE_PROFILE_ARN",
-            "test-haiku-arn",
-        )
-    )
     stack.enter_context(patch("agents.specialized_agents.list_index"))
     stack.enter_context(patch("agents.specialized_agents.search_index"))
     stack.enter_context(patch("tools.ubi_analytics_tools.get_query_ctr"))
@@ -166,62 +154,3 @@ def patch_ubi_agent_dependencies(mock_agent: MagicMock) -> ExitStack:
     return stack
 
 
-def patch_online_testing_agent_dependencies(mock_agent: MagicMock) -> ExitStack:
-    """Helper function to patch all dependencies for online_testing_agent.
-
-    Args:
-        mock_agent: Mock agent instance to be returned by Agent constructor
-
-    Returns:
-        ExitStack context manager with all patches applied
-    """
-    stack = ExitStack()
-    stack.enter_context(
-        patch("agents.specialized_agents.Agent", return_value=mock_agent)
-    )
-    stack.enter_context(patch("agents.specialized_agents.BedrockModel"))
-    stack.enter_context(patch("agents.specialized_agents.bedrock_session"))
-    stack.enter_context(
-        patch("agents.specialized_agents.INFERENCE_PROFILE_ARN", "test-arn")
-    )
-    stack.enter_context(patch("agents.specialized_agents.list_index"))
-    stack.enter_context(patch("agents.specialized_agents.search_index"))
-    stack.enter_context(
-        patch("tools.interleaved_test_tools.create_interleaved_test")
-    )
-    stack.enter_context(
-        patch("tools.interleaved_test_tools.get_interleaved_test")
-    )
-    stack.enter_context(
-        patch("tools.interleaved_test_tools.stop_interleaved_test")
-    )
-    stack.enter_context(
-        patch("tools.interleaved_test_tools.delete_interleaved_test")
-    )
-    stack.enter_context(
-        patch("tools.interleaved_test_tools.simulate_interleaved_test")
-    )
-    stack.enter_context(
-        patch("tools.interleaved_test_tools.calculate_interleaved_winner")
-    )
-    stack.enter_context(
-        patch("tools.search_configuration_tools.get_search_configuration")
-    )
-    stack.enter_context(
-        patch(
-            "tools.search_configuration_tools.deploy_search_configuration_to_production"
-        )
-    )
-    stack.enter_context(patch("tools.query_set_tools.get_query_set"))
-    stack.enter_context(patch("tools.ubi_analytics_tools.get_query_ctr"))
-    stack.enter_context(patch("tools.ubi_analytics_tools.get_document_ctr"))
-    stack.enter_context(
-        patch("tools.ubi_analytics_tools.get_query_performance_metrics")
-    )
-    stack.enter_context(
-        patch("tools.ubi_analytics_tools.get_top_queries_by_engagement")
-    )
-    stack.enter_context(
-        patch("tools.ubi_analytics_tools.get_top_documents_by_engagement")
-    )
-    return stack

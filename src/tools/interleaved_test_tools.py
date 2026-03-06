@@ -278,7 +278,7 @@ def create_interleaved_test(
             "created_at": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
             "stopped_at": None,
             "metadata": {
-                "created_by": "online_testing_agent",
+                "created_by": "search_relevance_tuning_system",
             },
         }
 

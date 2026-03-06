@@ -9,10 +9,10 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
+from agents import specialized_agents
 from helpers.specialized_agents_helpers import (
     patch_evaluation_agent_dependencies,
     patch_hypothesis_agent_dependencies,
-    patch_online_testing_agent_dependencies,
     patch_ubi_agent_dependencies,
 )
 
@@ -23,15 +23,13 @@ pytestmark = pytest.mark.integration
 @pytest.fixture(autouse=True)
 def mock_get_emitter() -> Generator[None, None, None]:
     """Mock emitter so agent wrappers do not require external context."""
-    with patch("utils.monitored_tool.get_ag_ui_emitter", return_value=None):
+    with patch("agents.specialized_agents.monitored_tool", side_effect=lambda x: x):
         yield
 
 
 @pytest.fixture(autouse=True)
 def reset_opensearch_tools() -> Generator[None, None, None]:
     """Reset _opensearch_tools before and after each test to ensure isolation."""
-    from agents import specialized_agents
-
     # Save original state
     original_tools = (
         list(specialized_agents._opensearch_tools)
@@ -71,8 +69,6 @@ class TestHypothesisAgent:
     @pytest.mark.asyncio
     async def test_hypothesis_agent_no_tools_configured(self):
         """Test that hypothesis_agent returns error when tools not configured."""
-        from agents import specialized_agents
-
         # autouse fixture ensures tools are empty
         result = await specialized_agents.hypothesis_agent("test query")
 
@@ -81,8 +77,6 @@ class TestHypothesisAgent:
     @pytest.mark.asyncio
     async def test_hypothesis_agent_success(self):
         """Test that hypothesis_agent creates agent and invokes successfully."""
-        from agents import specialized_agents
-
         # Set tools
         specialized_agents._opensearch_tools = [MagicMock()]
 
@@ -98,8 +92,6 @@ class TestHypothesisAgent:
     @pytest.mark.asyncio
     async def test_hypothesis_agent_rate_limit_error(self):
         """Test that hypothesis_agent handles rate limit errors."""
-        from agents import specialized_agents
-
         specialized_agents._opensearch_tools = [MagicMock()]
 
         mock_agent = MagicMock()
@@ -257,68 +249,6 @@ class TestUserBehaviorAnalysisAgent:
             assert "Rate limit" in result or "429" in result
 
 
-@pytest.mark.integration
-class TestOnlineTestingAgent:
-    """Tests for online_testing_agent function."""
-
-    @pytest.mark.asyncio
-    async def test_online_testing_agent_no_tools_configured(self):
-        """Test that online_testing_agent returns error when tools not configured."""
-        from agents import specialized_agents
-
-        # autouse fixture ensures tools are empty
-        result = await specialized_agents.online_testing_agent("test query")
-
-        assert "Error: OpenSearch tools not configured" in result
-
-    @pytest.mark.asyncio
-    async def test_online_testing_agent_success(self):
-        """Test that online_testing_agent creates agent and invokes successfully."""
-        from agents import specialized_agents
-
-        specialized_agents._opensearch_tools = [MagicMock()]
-
-        mock_agent = MagicMock()
-        mock_agent.invoke_async = AsyncMock(return_value="Test online testing response")
-
-        with patch_online_testing_agent_dependencies(mock_agent):
-            result = await specialized_agents.online_testing_agent("test query")
-
-            assert result == "Test online testing response"
-            mock_agent.invoke_async.assert_called_once_with("test query")
-
-    @pytest.mark.asyncio
-    async def test_online_testing_agent_error_handling(self):
-        """Test that online_testing_agent handles errors."""
-        from agents import specialized_agents
-
-        specialized_agents._opensearch_tools = [MagicMock()]
-
-        mock_agent = MagicMock()
-        mock_agent.invoke_async = AsyncMock(side_effect=Exception("Test error"))
-
-        with patch_online_testing_agent_dependencies(mock_agent):
-            result = await specialized_agents.online_testing_agent("test query")
-
-            assert "Error in online testing" in result
-            assert "Test error" in result
-
-    @pytest.mark.asyncio
-    async def test_online_testing_agent_rate_limit_error(self):
-        """Test that online_testing_agent handles rate limit errors."""
-        from agents import specialized_agents
-
-        specialized_agents._opensearch_tools = [MagicMock()]
-
-        mock_agent = MagicMock()
-        mock_agent.invoke_async = AsyncMock(
-            side_effect=Exception("Rate limit exceeded")
-        )
-
-        with patch_online_testing_agent_dependencies(mock_agent):
-            result = await specialized_agents.online_testing_agent("test query")
-
-            assert "Rate limit" in result or "429" in result
 
 
 @pytest.mark.integration
@@ -377,27 +307,6 @@ class TestSpecializedAgentsErrorHandling:
             assert "timed out" in result.lower() or "timeout" in result.lower()
             mock_agent.invoke_async.assert_called_once()
 
-    @pytest.mark.asyncio
-    async def test_online_testing_agent_rate_limit_with_backoff_message(self):
-        """Test online testing agent rate limit handling with helpful message."""
-        from agents import specialized_agents
-
-        specialized_agents._opensearch_tools = [MagicMock()]
-
-        mock_agent = MagicMock()
-        # Simulate rate limit error
-        mock_agent.invoke_async = AsyncMock(
-            side_effect=Exception("429 Too Many Requests - Rate limit exceeded")
-        )
-
-        with patch_online_testing_agent_dependencies(mock_agent):
-            result = await specialized_agents.online_testing_agent(
-                "Run interleaved test"
-            )
-
-            # Should detect rate limit, provide helpful message
-            assert "Rate limit" in result or "429" in result
-            assert "wait" in result.lower() or "simplifying" in result.lower()
 
     @pytest.mark.asyncio
     async def test_user_behavior_agent_missing_data(self):
@@ -464,8 +373,4 @@ class TestSpecializedAgentsErrorHandling:
 
         # User behavior agent
         result = await specialized_agents.user_behavior_analysis_agent("test query")
-        assert "Error: OpenSearch tools not configured" in result
-
-        # Online testing agent
-        result = await specialized_agents.online_testing_agent("test query")
         assert "Error: OpenSearch tools not configured" in result
