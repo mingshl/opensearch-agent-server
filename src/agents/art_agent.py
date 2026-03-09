@@ -18,6 +18,8 @@ import os
 from strands import Agent
 
 from utils.logging_helpers import get_logger, log_info_event
+from mcp.client.streamable_http import streamablehttp_client
+from strands.tools.mcp import MCPClient
 
 logger = get_logger(__name__)
 
@@ -25,6 +27,9 @@ logger = get_logger(__name__)
 # Used when BEDROCK_INFERENCE_PROFILE_ARN is not explicitly set.
 _DEFAULT_BEDROCK_MODEL_ID = "us.anthropic.claude-sonnet-4-20250514-v1:0"
 
+DEFAULT_MCP_SERVER_URL = "http://localhost:3001/mcp"
+
+ART_SYSTEM_PROMPT="You are an expert search relevance tuning system."
 
 def create_art_agent(opensearch_url: str) -> Agent:
     """Create the ART orchestrator agent.
@@ -55,8 +60,6 @@ def create_art_agent(opensearch_url: str) -> Agent:
     if not os.getenv("BEDROCK_HAIKU_INFERENCE_PROFILE_ARN"):
         os.environ["BEDROCK_HAIKU_INFERENCE_PROFILE_ARN"] = _DEFAULT_BEDROCK_MODEL_ID
 
-    from os_art.utils.agent_initialization import initialize_agent_system
-
     log_info_event(
         logger,
         f"Initializing ART agent with OpenSearch at {opensearch_url}",
@@ -64,7 +67,14 @@ def create_art_agent(opensearch_url: str) -> Agent:
         opensearch_url=opensearch_url,
     )
 
-    agent, _mcp_manager = initialize_agent_system(opensearch_url)
+    mcp_server_url = os.getenv("MCP_SERVER_URL", DEFAULT_MCP_SERVER_URL)
+
+    mcp_client = MCPClient(lambda: streamablehttp_client(mcp_server_url))
+
+    agent = Agent(
+        system_prompt=ART_SYSTEM_PROMPT,
+        tools=[mcp_client],
+    )
 
     log_info_event(
         logger,
